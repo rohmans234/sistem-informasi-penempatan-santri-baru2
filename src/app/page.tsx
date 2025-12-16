@@ -1,40 +1,49 @@
 import { PlacementCheckForm } from '@/components/placement-check-form';
 import { Button } from '@/components/ui/button';
-import { GanttChartSquare } from 'lucide-react';
+import { GraduationCap, LogIn } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm bg-card">
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
+      <header className="px-4 lg:px-10 h-20 flex items-center bg-white/80 backdrop-blur-sm sticky top-0 z-20 border-b">
         <div className="container mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center justify-center gap-2">
-            <GanttChartSquare className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold text-foreground">SantriPlacement</span>
+          <Link href="/" className="flex items-center justify-center gap-3">
+            <div className="bg-yellow-400 p-2 rounded-md">
+              <GraduationCap className="h-6 w-6 text-gray-900" />
+            </div>
+            <div>
+              <span className="text-lg font-bold text-gray-900 block leading-tight">
+                Pondok Modern Darussalam Gontor
+              </span>
+              <span className="text-sm text-gray-600 leading-tight">
+                Sistem Penempatan Santri Baru
+              </span>
+            </div>
           </Link>
           <nav className="flex gap-4 sm:gap-6">
-            <Button asChild variant="default">
-              <Link href="/login">Admin Login</Link>
+            <Button asChild variant="outline">
+              <Link href="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login Staff
+              </Link>
             </Button>
           </nav>
         </div>
       </header>
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-12 md:py-24 lg:py-32">
-          <div className="mx-auto max-w-2xl text-center">
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl font-headline">
-              Sistem Informasi Penempatan Santri Baru
-            </h1>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Pondok Modern Darussalam Gontor
-            </p>
-          </div>
+        <div className="container mx-auto px-4 py-12 md:py-20 lg:py-24">
           <PlacementCheckForm />
         </div>
       </main>
-      <footer className="py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-card">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Pondok Modern Darussalam Gontor. All rights reserved.
+      <footer className="py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-white">
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600 gap-4">
+          <p>&copy; {new Date().getFullYear()} Pondok Modern Darussalam Gontor. All rights reserved.</p>
+          <div className="flex gap-6">
+            <Link href="#" className="hover:text-primary transition-colors">Official Website</Link>
+            <Link href="#" className="hover:text-primary transition-colors">Bantuan</Link>
+            <Link href="#" className="hover:text-primary transition-colors">Kontak Kami</Link>
+          </div>
         </div>
       </footer>
     </div>
