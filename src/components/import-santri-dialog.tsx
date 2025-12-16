@@ -14,6 +14,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { UploadCloud, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 interface ImportSantriDialogProps {
   isOpen: boolean;
@@ -51,9 +52,11 @@ export function ImportSantriDialog({ isOpen, onClose }: ImportSantriDialogProps)
                 </Button>
             </div>
           </div>
-           <Button variant="link" size="sm" className="p-0 h-auto">
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Unduh Template CSV
+           <Button variant="link" size="sm" className="p-0 h-auto" asChild>
+              <Link href="/template-santri.csv" download>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Unduh Template CSV
+              </Link>
             </Button>
         </div>
         <DialogFooter>
