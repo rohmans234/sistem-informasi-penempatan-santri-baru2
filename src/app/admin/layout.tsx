@@ -1,5 +1,6 @@
 import AdminNav from '@/components/admin-nav';
 import { PageHeader } from '@/components/page-header';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +27,7 @@ export default function AdminLayout({
             <div className="flex-1">
               {/* Future Breadcrumbs can go here */}
             </div>
+            <ThemeToggle />
           </header>
           <main className="flex-1 p-4 md:p-6 lg:p-8">
             <SidebarInset>{children}</SidebarInset>
