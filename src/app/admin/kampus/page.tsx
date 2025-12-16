@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,20 +26,106 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { mockKampus } from '@/lib/mock-data';
+import { mockKampus as initialKampus } from '@/lib/mock-data';
+import type { MasterKampus } from '@/lib/types';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import { KampusForm } from '@/components/kampus-form';
+
 
 export default function CampusPage() {
+  const [kampusList, setKampusList] = useState<MasterKampus[]>(initialKampus);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedKampus, setSelectedKampus] = useState<MasterKampus | null>(null);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleOpenForm = (kampus?: MasterKampus | null) => {
+    setSelectedKampus(kampus || null);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setSelectedKampus(null);
+    setIsFormOpen(false);
+  };
+
+  const handleOpenDeleteAlert = (kampus: MasterKampus) => {
+    setSelectedKampus(kampus);
+    setIsDeleteAlertOpen(true);
+  }
+
+  const handleCloseDeleteAlert = () => {
+    setSelectedKampus(null);
+    setIsDeleteAlertOpen(false);
+  }
+
+  const handleFormSubmit = (values: Omit<MasterKampus, 'id_kampus' | 'kuota_terisi' | 'tanggal_dibuat'>) => {
+    if (selectedKampus) {
+      // Update
+      setKampusList(
+        kampusList.map((k) =>
+          k.id_kampus === selectedKampus.id_kampus ? { ...k, ...values } : k
+        )
+      );
+       toast({ title: "Berhasil!", description: "Data kampus berhasil diperbarui." });
+    } else {
+      // Create
+      const newKampus: MasterKampus = {
+        id_kampus: Math.max(...kampusList.map(k => k.id_kampus)) + 1,
+        ...values,
+        kuota_terisi: 0,
+        tanggal_dibuat: new Date().toISOString().split('T')[0],
+      };
+      setKampusList([...kampusList, newKampus]);
+      toast({ title: "Berhasil!", description: "Kampus baru berhasil ditambahkan." });
+    }
+    handleCloseForm();
+  };
+
+   const handleDeleteKampus = () => {
+    if (!selectedKampus) return;
+    setKampusList(kampusList.filter(k => k.id_kampus !== selectedKampus.id_kampus));
+    toast({ title: "Berhasil!", description: "Data kampus berhasil dihapus.", variant: "destructive" });
+    handleCloseDeleteAlert();
+  };
+
+
   return (
     <>
       <PageHeader
         title="Manajemen Kampus"
         description="Kelola data kampus, kapasitas, dan kuota untuk penempatan."
       >
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Tambah Kampus
-        </Button>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => handleOpenForm()}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Tambah Kampus
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>{selectedKampus ? 'Edit' : 'Tambah'} Kampus</DialogTitle>
+            </DialogHeader>
+            <KampusForm
+              initialData={selectedKampus}
+              onSubmit={handleFormSubmit}
+              onClose={handleCloseForm}
+            />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
       <Card>
         <CardHeader>
@@ -57,7 +147,7 @@ export default function CampusPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockKampus.map((kampus) => (
+              {kampusList.map((kampus) => (
                 <TableRow key={kampus.id_kampus}>
                   <TableCell className="font-medium">{kampus.nama_kampus}</TableCell>
                   <TableCell>
@@ -82,10 +172,10 @@ export default function CampusPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenForm(kampus)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteAlert(kampus)}>
                           Hapus
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -97,6 +187,22 @@ export default function CampusPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat diurungkan. Ini akan menghapus data kampus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCloseDeleteAlert}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteKampus}>Hapus</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
