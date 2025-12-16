@@ -77,10 +77,10 @@ export function PlacementCheckForm() {
                 exit={{ opacity: 0, y: -20 }}
                 className="text-center"
               >
-                <p className="flex items-center justify-center gap-2 text-muted-foreground">
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
                   Mencari data...
-                </p>
+                </div>
               </motion.div>
             ) : result === 'not_found' ? (
               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
