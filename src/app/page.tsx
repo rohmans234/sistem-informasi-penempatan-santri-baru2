@@ -14,7 +14,7 @@ export default function Home() {
           </Link>
           <nav className="flex gap-4 sm:gap-6">
             <Button asChild variant="default">
-              <Link href="/admin">Admin Login</Link>
+              <Link href="/login">Admin Login</Link>
             </Button>
           </nav>
         </div>
