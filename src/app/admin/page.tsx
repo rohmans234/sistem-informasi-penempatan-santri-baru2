@@ -1,3 +1,5 @@
+
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -43,46 +45,54 @@ export default function DashboardPage() {
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Calon Santri</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalSantri}</div>
-            <p className="text-xs text-muted-foreground">Total pendaftar yang lulus ujian</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Kampus Aktif</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockKampus.filter(k => k.status_aktif).length}</div>
-            <p className="text-xs text-muted-foreground">Dari {totalKampus} total kampus</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Santri Ditempatkan</CardTitle>
-            <CheckCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{santriDitempatkan}</div>
-            <p className="text-xs text-muted-foreground">Dari {totalSantri} total santri</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sisa Kuota</CardTitle>
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kuotaTersedia}</div>
-            <p className="text-xs text-muted-foreground">Total kuota tersedia di semua kampus</p>
-          </CardContent>
-        </Card>
+        <Link href="/admin/santri">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Calon Santri</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalSantri}</div>
+                <p className="text-xs text-muted-foreground">Total pendaftar yang lulus ujian</p>
+              </CardContent>
+            </Card>
+        </Link>
+        <Link href="/admin/kampus">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Kampus Aktif</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{mockKampus.filter(k => k.status_aktif).length}</div>
+                <p className="text-xs text-muted-foreground">Dari {totalKampus} total kampus</p>
+              </CardContent>
+            </Card>
+        </Link>
+        <Link href="/admin/penempatan">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Santri Ditempatkan</CardTitle>
+                <CheckCheck className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{santriDitempatkan}</div>
+                <p className="text-xs text-muted-foreground">Dari {totalSantri} total santri</p>
+              </CardContent>
+            </Card>
+        </Link>
+        <Link href="/admin/penempatan">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Sisa Kuota</CardTitle>
+                <PieChart className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{kuotaTersedia}</div>
+                <p className="text-xs text-muted-foreground">Total kuota tersedia di semua kampus</p>
+              </CardContent>
+            </Card>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 mt-6">
