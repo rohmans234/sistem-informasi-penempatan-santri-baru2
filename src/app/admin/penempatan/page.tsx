@@ -28,10 +28,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { mockSantri } from '@/lib/mock-data';
-import { mockKampus } from '@/lib/mock-data';
 import { PlayCircle, Info, Send, MoreHorizontal, FilePenLine } from 'lucide-react';
-import type { PenempatanResult, CalonSantri, MasterKampus } from '@/lib/types';
+import type { PenempatanResult } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -53,9 +51,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAppContext } from '@/context/app-context';
 
 export default function PlacementPage() {
-  const [placementResults, setPlacementResults] = useState<PenempatanResult[]>([]);
+  const { santriList, kampusList, placementResults, setPlacementResults, updateSinglePlacement, setSantriList, setKampusList } = useAppContext();
   const [isPublished, setIsPublished] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPublishAlertOpen, setIsPublishAlertOpen] = useState(false);
@@ -71,17 +70,22 @@ export default function PlacementPage() {
     toast({ title: 'Memproses...', description: 'Algoritma penempatan sedang berjalan.' });
 
     setTimeout(() => {
-      const availableSantri = mockSantri.filter(s => s.status_penempatan === 'Belum Ditempatkan');
-      const availableKampus = [...mockKampus].filter(k => k.status_aktif);
+      let tempSantri = JSON.parse(JSON.stringify(santriList));
+      let tempKampus = JSON.parse(JSON.stringify(kampusList));
+
+      const availableSantri = tempSantri.filter((s: { status_penempatan: string; }) => s.status_penempatan === 'Belum Ditempatkan');
+      const availableKampus = tempKampus.filter((k: { status_aktif: any; }) => k.status_aktif);
 
       const newPlacements: PenempatanResult[] = [];
       let placementId = 1;
 
-      availableSantri.sort((a, b) => b.rata_rata_ujian - a.rata_rata_ujian);
+      availableSantri.sort((a: { rata_rata_ujian: number; }, b: { rata_rata_ujian: number; }) => b.rata_rata_ujian - a.rata_rata_ujian);
 
       for (const santri of availableSantri) {
+        let placed = false;
+        // Find a suitable campus
         const targetKampus = availableKampus.find(
-          k => k.jenis_kelamin === santri.jenis_kelamin && k.kuota_terisi < k.kuota_pelajar_baru
+          (k: { jenis_kelamin: any; kuota_terisi: number; kuota_pelajar_baru: number; }) => k.jenis_kelamin === santri.jenis_kelamin && k.kuota_terisi < k.kuota_pelajar_baru
         );
 
         if (targetKampus) {
@@ -94,16 +98,20 @@ export default function PlacementPage() {
             wakil_pengasuh: 'Belum Ditentukan',
           });
           targetKampus.kuota_terisi++;
+          santri.status_penempatan = 'Ditempatkan';
+          placed = true;
         }
       }
 
       setPlacementResults(newPlacements);
+      setSantriList(tempSantri);
+      setKampusList(tempKampus);
       setIsProcessing(false);
       toast({ title: 'Berhasil!', description: 'Proses penempatan otomatis telah selesai.' });
     }, 2000);
   };
   
-  const handleOpenEditModal = (result: PenempatanResult, type: 'pindah' | 'editWali') => {
+  const handleOpenEditModal = (result: PenempatanResult) => {
     setSelectedResult(result);
     setEditedWakil(result.wakil_pengasuh);
     setEditedKampus(result.kampus);
@@ -118,11 +126,11 @@ export default function PlacementPage() {
   const handleUpdatePlacement = () => {
     if (!selectedResult) return;
 
-    setPlacementResults(results => results.map(r => 
-      r.id === selectedResult.id 
-        ? { ...r, wakil_pengasuh: editedWakil, kampus: editedKampus }
-        : r
-    ));
+    updateSinglePlacement(selectedResult.id, {
+        ...selectedResult,
+        wakil_pengasuh: editedWakil,
+        kampus: editedKampus,
+    });
     
     toast({ title: 'Berhasil!', description: 'Data penempatan telah diperbarui.' });
     handleCloseEditModal();
@@ -141,8 +149,8 @@ export default function PlacementPage() {
       });
   }
 
-  const activeMaleKampus = mockKampus.filter(k => k.status_aktif && k.jenis_kelamin === 'Laki-laki').map(k => k.nama_kampus);
-  const activeFemaleKampus = mockKampus.filter(k => k.status_aktif && k.jenis_kelamin === 'Perempuan').map(k => k.nama_kampus);
+  const activeMaleKampus = kampusList.filter(k => k.status_aktif && k.jenis_kelamin === 'Laki-laki').map(k => k.nama_kampus);
+  const activeFemaleKampus = kampusList.filter(k => k.status_aktif && k.jenis_kelamin === 'Perempuan').map(k => k.nama_kampus);
   const relevantKampusList = selectedResult?.jenis_kelamin === 'Laki-laki' ? activeMaleKampus : activeFemaleKampus;
 
 
@@ -247,8 +255,7 @@ export default function PlacementPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEditModal(result, 'pindah')}>Pindahkan Kampus</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenEditModal(result, 'editWali')}>Edit Wakil Pengasuh</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenEditModal(result)}>Pindahkan/Edit</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -326,5 +333,3 @@ export default function PlacementPage() {
     </>
   );
 }
-
-    

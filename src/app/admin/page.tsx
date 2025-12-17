@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -7,7 +8,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -22,21 +22,16 @@ import {
   Building2,
   Users,
   PieChart,
-  CheckCheck,
+  UserCheck,
   CalendarDays,
   Download,
-  ArrowUp,
-  ArrowDown,
   AlertTriangle,
   Info,
   MoreHorizontal,
-  UserCheck,
   Clock,
-  FileX2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import CampusDistributionChart from '@/components/campus-distribution-chart';
-import { mockKampus, mockSantri } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -46,15 +41,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAppContext } from '@/context/app-context';
+import { mockSantri } from '@/lib/mock-data';
 
-
-const totalPendaftar = 4520;
-const totalDiterima = 3100;
-const sisaKuota = 1420;
-const kampusPenuh = mockKampus.filter(k => k.kuota_terisi >= k.kuota_pelajar_baru).length;
-const totalKampus = mockKampus.length;
 
 const recentActivities = [
     { name: "Muhammad Fatih", status: "Diterima", campus: "Gontor 1", time: "2 min ago", avatar: "https://i.pravatar.cc/150?img=1" },
@@ -65,6 +55,21 @@ const recentActivities = [
 
 
 export default function DashboardPage() {
+  const { santriList, kampusList, placementResults } = useAppContext();
+
+  const totalPendaftar = santriList.length;
+  const totalDiterima = placementResults.length;
+  
+  const totalKuota = kampusList
+    .filter(k => k.status_aktif)
+    .reduce((acc, k) => acc + k.kuota_pelajar_baru, 0);
+
+  const sisaKuota = totalKuota - totalDiterima;
+
+  const kampusPenuh = kampusList.filter(k => k.status_aktif && k.kuota_terisi >= k.kuota_pelajar_baru).length;
+  const totalKampus = kampusList.filter(k => k.status_aktif).length;
+
+
   return (
     <>
       <PageHeader
@@ -82,65 +87,70 @@ export default function DashboardPage() {
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pendaftar</CardTitle>
-            <div className="p-2 bg-blue-100 rounded-md">
-                <Users className="h-5 w-5 text-blue-600" />
-            </div>
-            </CardHeader>
-            <CardContent>
-            <div className="text-3xl font-bold">{totalPendaftar.toLocaleString('id-ID')}</div>
-            <p className="text-xs text-green-600 flex items-center">
-                <ArrowUp className="h-3 w-3 mr-1" />
-                +12% dari bulan lalu
-            </p>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Diterima</CardTitle>
-             <div className="p-2 bg-green-100 rounded-md">
-                <UserCheck className="h-5 w-5 text-green-600" />
-            </div>
-            </CardHeader>
-            <CardContent>
-            <div className="text-3xl font-bold">{totalDiterima.toLocaleString('id-ID')}</div>
-             <p className="text-xs text-green-600 flex items-center">
-                <ArrowUp className="h-3 w-3 mr-1" />
-                +8% dari bulan lalu
-            </p>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sisa Kuota</CardTitle>
-             <div className="p-2 bg-yellow-100 rounded-md">
-                <PieChart className="h-5 w-5 text-yellow-600" />
-            </div>
-            </CardHeader>
-            <CardContent>
-            <div className="text-3xl font-bold">{sisaKuota.toLocaleString('id-ID')}</div>
-            <p className="text-xs text-red-600 flex items-center">
-                <ArrowDown className="h-3 w-3 mr-1" />
-                -5% dari bulan lalu
-            </p>
-            </CardContent>
-        </Card>
-         <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kampus Penuh</CardTitle>
-             <div className="p-2 bg-red-100 rounded-md">
-                <Building2 className="h-5 w-5 text-red-600" />
-            </div>
-            </CardHeader>
-            <CardContent>
-            <div className="text-3xl font-bold">{kampusPenuh} <span className="text-lg text-muted-foreground">/ {totalKampus} Kampus</span></div>
-            <p className="text-xs text-muted-foreground">
-                Kampus dengan kuota terpenuhi
-            </p>
-            </CardContent>
-        </Card>
+        <Link href="/admin/santri">
+          <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Calon Santri</CardTitle>
+              <div className="p-2 bg-blue-100 rounded-md">
+                  <Users className="h-5 w-5 text-blue-600" />
+              </div>
+              </CardHeader>
+              <CardContent>
+              <div className="text-3xl font-bold">{totalPendaftar.toLocaleString('id-ID')}</div>
+              <p className="text-xs text-muted-foreground">
+                  Santri yang lulus ujian masuk
+              </p>
+              </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/penempatan">
+          <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Santri Ditempatkan</CardTitle>
+              <div className="p-2 bg-green-100 rounded-md">
+                  <UserCheck className="h-5 w-5 text-green-600" />
+              </div>
+              </CardHeader>
+              <CardContent>
+              <div className="text-3xl font-bold">{totalDiterima.toLocaleString('id-ID')}</div>
+              <p className="text-xs text-muted-foreground">
+                  Santri yang sudah mendapat kampus
+              </p>
+              </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/penempatan">
+          <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Sisa Kuota</CardTitle>
+              <div className="p-2 bg-yellow-100 rounded-md">
+                  <PieChart className="h-5 w-5 text-yellow-600" />
+              </div>
+              </CardHeader>
+              <CardContent>
+              <div className="text-3xl font-bold">{sisaKuota.toLocaleString('id-ID')}</div>
+              <p className="text-xs text-muted-foreground">
+                  Dari total kuota {totalKuota.toLocaleString('id-ID')}
+              </p>
+              </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/kampus">
+          <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Kampus Penuh</CardTitle>
+              <div className="p-2 bg-red-100 rounded-md">
+                  <Building2 className="h-5 w-5 text-red-600" />
+              </div>
+              </CardHeader>
+              <CardContent>
+              <div className="text-3xl font-bold">{kampusPenuh} <span className="text-lg text-muted-foreground">/ {totalKampus} Kampus</span></div>
+              <p className="text-xs text-muted-foreground">
+                  Kampus dengan kuota terpenuhi
+              </p>
+              </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-5 lg:grid-cols-3 mt-6">

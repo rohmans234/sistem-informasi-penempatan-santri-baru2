@@ -7,15 +7,7 @@ import {
   ChartTooltipContent,
   ChartConfig
 } from "@/components/ui/chart"
-import { mockKampus } from "@/lib/mock-data"
-
-const chartData = mockKampus
-  .filter(k => k.status_aktif)
-  .map(k => ({
-    campus: k.nama_kampus.replace('Gontor ', 'G').replace('Pusat', 'P').replace('Putri', 'Pi'),
-    filled: k.kuota_terisi,
-    total: k.kuota_pelajar_baru,
-  }));
+import { useAppContext } from "@/context/app-context"
 
 const chartConfig = {
   filled: {
@@ -29,6 +21,17 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export default function CampusDistributionChart() {
+  const { kampusList } = useAppContext();
+
+  const chartData = kampusList
+    .filter(k => k.status_aktif)
+    .map(k => ({
+      campus: k.nama_kampus.replace('Gontor ', 'G').replace('Pusat', 'P').replace('Putri', 'Pi'),
+      filled: k.kuota_terisi,
+      total: k.kuota_pelajar_baru,
+    }));
+
+
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height={350}>

@@ -26,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { mockKampus as initialKampus } from '@/lib/mock-data';
 import type { MasterKampus } from '@/lib/types';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -42,10 +41,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { KampusForm } from '@/components/kampus-form';
+import { useAppContext } from '@/context/app-context';
 
 
 export default function CampusPage() {
-  const [kampusList, setKampusList] = useState<MasterKampus[]>(initialKampus);
+  const { kampusList, addKampus, updateKampus, deleteKampus } = useAppContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedKampus, setSelectedKampus] = useState<MasterKampus | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -74,21 +74,11 @@ export default function CampusPage() {
   const handleFormSubmit = (values: Omit<MasterKampus, 'id_kampus' | 'kuota_terisi' | 'tanggal_dibuat'>) => {
     if (selectedKampus) {
       // Update
-      setKampusList(
-        kampusList.map((k) =>
-          k.id_kampus === selectedKampus.id_kampus ? { ...k, ...values } : k
-        )
-      );
-       toast({ title: "Berhasil!", description: "Data kampus berhasil diperbarui." });
+      updateKampus(selectedKampus.id_kampus, values);
+      toast({ title: "Berhasil!", description: "Data kampus berhasil diperbarui." });
     } else {
       // Create
-      const newKampus: MasterKampus = {
-        id_kampus: Math.max(...kampusList.map(k => k.id_kampus)) + 1,
-        ...values,
-        kuota_terisi: 0,
-        tanggal_dibuat: new Date().toISOString().split('T')[0],
-      };
-      setKampusList([...kampusList, newKampus]);
+      addKampus(values);
       toast({ title: "Berhasil!", description: "Kampus baru berhasil ditambahkan." });
     }
     handleCloseForm();
@@ -96,7 +86,7 @@ export default function CampusPage() {
 
    const handleDeleteKampus = () => {
     if (!selectedKampus) return;
-    setKampusList(kampusList.filter(k => k.id_kampus !== selectedKampus.id_kampus));
+    deleteKampus(selectedKampus.id_kampus);
     toast({ title: "Berhasil!", description: "Data kampus berhasil dihapus.", variant: "destructive" });
     handleCloseDeleteAlert();
   };
@@ -205,4 +195,3 @@ export default function CampusPage() {
     </>
   );
 }
-

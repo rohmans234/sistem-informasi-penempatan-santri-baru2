@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { AppProvider } from '@/context/app-context';
 
 export const metadata: Metadata = {
   title: 'SantriPlacement',
@@ -24,7 +25,8 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-         <ThemeProvider
+        <AppProvider>
+          <ThemeProvider
             attribute="class"
             defaultTheme="light"
             enableSystem={false}
@@ -32,7 +34,8 @@ export default function RootLayout({
           >
             {children}
             <Toaster />
-        </ThemeProvider>
+          </ThemeProvider>
+        </AppProvider>
       </body>
     </html>
   );

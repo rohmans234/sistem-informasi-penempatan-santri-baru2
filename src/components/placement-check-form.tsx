@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Search, XCircle, ArrowRight, MapPin, Download, Annoyed } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { mockPenempatan } from '@/lib/mock-data';
 import type { PenempatanResult } from '@/lib/types';
-import { Separator } from './ui/separator';
+import { useAppContext } from '@/context/app-context';
 
 export function PlacementCheckForm() {
+  const { placementResults } = useAppContext();
   const [regNumber, setRegNumber] = useState('');
   const [result, setResult] = useState<PenempatanResult | 'not_found' | 'not_placed' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ export function PlacementCheckForm() {
 
     // Simulate API call
     setTimeout(() => {
-      const found = mockPenempatan.find((p) => p.no_pendaftaran === regNumber);
+      const found = placementResults.find((p) => p.no_pendaftaran === regNumber);
       // Simulate not placed case
       if (regNumber === '202401005') {
         setResult('not_placed');

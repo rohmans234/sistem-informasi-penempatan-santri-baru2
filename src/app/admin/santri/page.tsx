@@ -28,16 +28,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { mockSantri as initialSantri } from '@/lib/mock-data';
 import { MoreHorizontal, PlusCircle, Upload, Search } from 'lucide-react';
 import type { CalonSantri } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { SantriForm } from '@/components/santri-form';
 import { ImportSantriDialog } from '@/components/import-santri-dialog';
+import { useAppContext } from '@/context/app-context';
 
 export default function SantriPage() {
-  const [santriList, setSantriList] = useState<CalonSantri[]>(initialSantri);
+  const { santriList, addSantri, updateSantri, deleteSantri } = useAppContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedSantri, setSelectedSantri] = useState<CalonSantri | null>(null);
@@ -54,32 +54,20 @@ export default function SantriPage() {
   };
 
   const handleFormSubmit = (values: Omit<CalonSantri, 'id_santri' | 'rata_rata_ujian' | 'status_penempatan'>) => {
-     const rataRata = (values.nilai_bindonesia + values.nilai_imla + values.nilai_alquran + values.nilai_berhitung) / 4;
-    
     if (selectedSantri) {
       // Update
-      setSantriList(
-        santriList.map((s) =>
-          s.id_santri === selectedSantri.id_santri ? { ...s, ...values, rata_rata_ujian: rataRata } : s
-        )
-      );
+      updateSantri(selectedSantri.id_santri, values);
       toast({ title: 'Berhasil!', description: 'Data santri berhasil diperbarui.' });
     } else {
       // Create
-      const newSantri: CalonSantri = {
-        id_santri: Math.max(...santriList.map((s) => s.id_santri)) + 1,
-        ...values,
-        rata_rata_ujian: rataRata,
-        status_penempatan: 'Belum Ditempatkan',
-      };
-      setSantriList([...santriList, newSantri]);
+      addSantri(values);
       toast({ title: 'Berhasil!', description: 'Santri baru berhasil ditambahkan.' });
     }
     handleCloseForm();
   };
 
   const handleDeleteSantri = (id_santri: number) => {
-    setSantriList(santriList.filter(s => s.id_santri !== id_santri));
+    deleteSantri(id_santri);
     toast({ title: "Berhasil!", description: "Data santri berhasil dihapus.", variant: "destructive" });
   };
 
@@ -185,4 +173,3 @@ export default function SantriPage() {
     </>
   );
 }
-
