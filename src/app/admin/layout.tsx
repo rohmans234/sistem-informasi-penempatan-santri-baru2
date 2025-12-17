@@ -1,43 +1,15 @@
-'use client';
+import AdminClientLayout from './client-layout';
+import type { Metadata } from 'next';
 
-import AdminNav from '@/components/admin-nav';
-import { ThemeToggle } from '@/components/theme-toggle';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
-import { AppProvider } from '@/context/app-context';
+export const metadata: Metadata = {
+  title: 'Admin Dashboard | SantriPlacement',
+  description: 'Admin dashboard for SantriPlacement system.',
+};
 
 export default function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <AppProvider>
-      <SidebarProvider>
-        <div className="flex min-h-screen">
-          <Sidebar>
-            <AdminNav />
-          </Sidebar>
-          <div className="flex-1 flex flex-col">
-            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-              <SidebarTrigger className="md:hidden" />
-              <div className="flex-1">
-                {/* Future Breadcrumbs can go here */}
-              </div>
-              <ThemeToggle />
-            </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-              <SidebarInset>{children}</SidebarInset>
-            </main>
-          </div>
-        </div>
-      </SidebarProvider>
-    </AppProvider>
-  );
+  return <AdminClientLayout>{children}</AdminClientLayout>;
 }
