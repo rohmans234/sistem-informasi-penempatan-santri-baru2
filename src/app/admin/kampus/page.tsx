@@ -96,7 +96,7 @@ export default function CampusPage() {
     <>
       <PageHeader
         title="Manajemen Kampus"
-        description="Kelola data kampus, kapasitas, dan kuota untuk penempatan."
+        description="Kelola data kampus, kapasitas, kuota, dan wakil pengasuh untuk penempatan."
       >
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
@@ -105,7 +105,7 @@ export default function CampusPage() {
               Tambah Kampus
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[525px]">
+          <DialogContent className="sm:max-w-[625px]">
             <DialogHeader>
               <DialogTitle>{selectedKampus ? 'Edit' : 'Tambah'} Kampus</DialogTitle>
             </DialogHeader>
@@ -126,8 +126,8 @@ export default function CampusPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nama Kampus</TableHead>
+                <TableHead>Wakil Pengasuh</TableHead>
                 <TableHead>Jenis Kelamin</TableHead>
-                <TableHead>Kapasitas</TableHead>
                 <TableHead>Kuota Baru</TableHead>
                 <TableHead>Terisi</TableHead>
                 <TableHead>Status</TableHead>
@@ -140,12 +140,12 @@ export default function CampusPage() {
               {kampusList.map((kampus) => (
                 <TableRow key={kampus.id_kampus}>
                   <TableCell className="font-medium">{kampus.nama_kampus}</TableCell>
+                  <TableCell>{kampus.wakil_pengasuh || '-'}</TableCell>
                   <TableCell>
                     <Badge variant={kampus.jenis_kelamin === 'Laki-laki' ? 'default' : 'secondary'} className={kampus.jenis_kelamin === 'Perempuan' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300' : ''}>
                       {kampus.jenis_kelamin}
                     </Badge>
                   </TableCell>
-                  <TableCell>{kampus.kapasitas_total}</TableCell>
                   <TableCell>{kampus.kuota_pelajar_baru}</TableCell>
                   <TableCell>{kampus.kuota_terisi}</TableCell>
                   <TableCell>

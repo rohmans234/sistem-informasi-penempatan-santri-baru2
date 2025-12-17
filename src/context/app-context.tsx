@@ -87,8 +87,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   
   const updateSinglePlacement = useCallback((id: string, updatedResult: Partial<PenempatanResult>) => {
-    setPlacementResults(prev => prev.map(p => p.id === id ? { ...p, ...updatedResult } : p));
-  }, []);
+    setPlacementResults(prev => prev.map(p => {
+        if (p.id === id) {
+            const updated = { ...p, ...updatedResult };
+
+            // If campus is changed, also update the housemaster from the campus list
+            if (updatedResult.kampus) {
+                const newKampus = kampusList.find(k => k.nama_kampus === updatedResult.kampus);
+                updated.wakil_pengasuh = newKampus?.wakil_pengasuh || 'Belum Ditentukan';
+            }
+            return updated;
+        }
+        return p;
+    }));
+}, [kampusList]);
 
   const value = {
     kampusList,

@@ -13,6 +13,7 @@ export type MasterKampus = {
   kuota_terisi: number;
   status_aktif: boolean;
   tanggal_dibuat: string;
+  wakil_pengasuh?: string;
 };
 
 export type CalonSantri = {

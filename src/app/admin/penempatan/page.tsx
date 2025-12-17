@@ -43,7 +43,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -60,7 +59,6 @@ export default function PlacementPage() {
   const [isPublishAlertOpen, setIsPublishAlertOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<PenempatanResult | null>(null);
-  const [editedWakil, setEditedWakil] = useState('');
   const [editedKampus, setEditedKampus] = useState('');
 
   const { toast } = useToast();
@@ -95,7 +93,7 @@ export default function PlacementPage() {
             nama_lengkap: santri.nama_lengkap,
             jenis_kelamin: santri.jenis_kelamin,
             kampus: targetKampus.nama_kampus,
-            wakil_pengasuh: 'Belum Ditentukan',
+            wakil_pengasuh: targetKampus.wakil_pengasuh || 'Belum Ditentukan',
           });
           targetKampus.kuota_terisi++;
           santri.status_penempatan = 'Ditempatkan';
@@ -113,7 +111,6 @@ export default function PlacementPage() {
   
   const handleOpenEditModal = (result: PenempatanResult) => {
     setSelectedResult(result);
-    setEditedWakil(result.wakil_pengasuh);
     setEditedKampus(result.kampus);
     setIsEditModalOpen(true);
   };
@@ -128,7 +125,6 @@ export default function PlacementPage() {
 
     updateSinglePlacement(selectedResult.id, {
         ...selectedResult,
-        wakil_pengasuh: editedWakil,
         kampus: editedKampus,
     });
     
@@ -192,14 +188,10 @@ export default function PlacementPage() {
            <Card>
             <CardHeader>
               <CardTitle>2. Finalisasi & Publikasi</CardTitle>
-              <CardDescription>Lengkapi data dan publikasikan hasil agar dapat dilihat oleh santri.</CardDescription>
+              <CardDescription>Publikasikan hasil agar dapat dilihat oleh santri.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className='space-y-4'>
-                <Button variant="outline" className="w-full" onClick={handleLengkapiData} disabled={placementResults.length === 0}>
-                  <FilePenLine className="mr-2 h-4 w-4" />
-                  Lengkapi Data Wali
-                </Button>
                  <Button 
                     className="w-full" 
                     variant={isPublished ? "secondary" : "default"} 
@@ -255,7 +247,7 @@ export default function PlacementPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEditModal(result)}>Pindahkan/Edit</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenEditModal(result)}>Pindahkan Kampus</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -292,7 +284,7 @@ export default function PlacementPage() {
       <Dialog open={isEditModalOpen} onOpenChange={handleCloseEditModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Data Penempatan</DialogTitle>
+            <DialogTitle>Pindahkan Santri</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -300,7 +292,7 @@ export default function PlacementPage() {
                 <p className="text-sm text-muted-foreground">{selectedResult?.no_pendaftaran}</p>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="edit-kampus">Pindahkan Kampus</Label>
+                <Label htmlFor="edit-kampus">Pindahkan ke Kampus</Label>
                 <Select value={editedKampus} onValueChange={setEditedKampus}>
                     <SelectTrigger id="edit-kampus">
                         <SelectValue placeholder="Pilih kampus baru" />
@@ -311,15 +303,6 @@ export default function PlacementPage() {
                         ))}
                     </SelectContent>
                 </Select>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="edit-wali">Wakil Pengasuh</Label>
-                <Input 
-                    id="edit-wali"
-                    value={editedWakil}
-                    onChange={(e) => setEditedWakil(e.target.value)}
-                    placeholder="Masukkan nama wakil pengasuh"
-                />
             </div>
           </div>
            <div className="flex justify-end gap-2">

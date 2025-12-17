@@ -10,6 +10,7 @@ export const mockKampus: MasterKampus[] = [
     kuota_terisi: 150,
     status_aktif: true,
     tanggal_dibuat: '2023-01-15',
+    wakil_pengasuh: 'Ustadz Hasanuddin',
   },
   {
     id_kampus: 2,
@@ -20,6 +21,7 @@ export const mockKampus: MasterKampus[] = [
     kuota_terisi: 150,
     status_aktif: true,
     tanggal_dibuat: '2023-01-15',
+    wakil_pengasuh: 'Ustadz Ridwan Kamil',
   },
   {
     id_kampus: 3,
@@ -30,6 +32,7 @@ export const mockKampus: MasterKampus[] = [
     kuota_terisi: 220,
     status_aktif: true,
     tanggal_dibuat: '2023-01-16',
+    wakil_pengasuh: 'Ustadzah Aisyah Humaira',
   },
   {
     id_kampus: 4,
@@ -40,6 +43,7 @@ export const mockKampus: MasterKampus[] = [
     kuota_terisi: 180,
     status_aktif: true,
     tanggal_dibuat: '2023-01-16',
+    wakil_pengasuh: 'Ustadzah Fatimah Azzahra',
   },
   {
     id_kampus: 5,
@@ -50,6 +54,7 @@ export const mockKampus: MasterKampus[] = [
     kuota_terisi: 80,
     status_aktif: false,
     tanggal_dibuat: '2023-01-17',
+    wakil_pengasuh: 'Ustadz Abdul Somad',
   },
 ];
 

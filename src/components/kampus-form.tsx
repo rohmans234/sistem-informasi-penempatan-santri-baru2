@@ -30,6 +30,7 @@ const formSchema = z.object({
   jenis_kelamin: z.enum(['Laki-laki', 'Perempuan']),
   kapasitas_total: z.coerce.number().min(1, 'Kapasitas harus lebih dari 0'),
   kuota_pelajar_baru: z.coerce.number().min(1, 'Kuota harus lebih dari 0'),
+  wakil_pengasuh: z.string().optional(),
   status_aktif: z.boolean(),
 });
 
@@ -53,6 +54,7 @@ export function KampusForm({ initialData, onSubmit, onClose }: KampusFormProps) 
           jenis_kelamin: 'Laki-laki',
           kapasitas_total: 0,
           kuota_pelajar_baru: 0,
+          wakil_pengasuh: '',
           status_aktif: true,
         },
   });
@@ -66,6 +68,7 @@ export function KampusForm({ initialData, onSubmit, onClose }: KampusFormProps) 
             jenis_kelamin: 'Laki-laki',
             kapasitas_total: 0,
             kuota_pelajar_baru: 0,
+            wakil_pengasuh: '',
             status_aktif: true,
         });
     }
@@ -87,27 +90,42 @@ export function KampusForm({ initialData, onSubmit, onClose }: KampusFormProps) 
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="jenis_kelamin"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Jenis Kelamin</FormLabel>
-               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih jenis kelamin" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Laki-laki">Laki-laki</SelectItem>
-                  <SelectItem value="Perempuan">Perempuan</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="jenis_kelamin"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Jenis Kelamin</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih jenis kelamin" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                    <SelectItem value="Perempuan">Perempuan</SelectItem>
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+             <FormField
+                control={form.control}
+                name="wakil_pengasuh"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Wakil Pengasuh</FormLabel>
+                    <FormControl>
+                    <Input placeholder="Nama Wakil Pengasuh" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        </div>
         <div className="grid grid-cols-2 gap-4">
            <FormField
             control={form.control}
