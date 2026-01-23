@@ -27,7 +27,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { mockPanitia as initialPanitia } from '@/lib/mock-data';
 import { MoreHorizontal, PlusCircle, ShieldCheck, UserCog } from 'lucide-react';
 import {
   Dialog,
@@ -52,7 +51,7 @@ import { PanitiaForm } from '@/components/panitia-form';
 
 export default function PanitiaPage() {
   const [panitiaList, setPanitiaList] =
-    useState<Panitia[]>(initialPanitia);
+    useState<Panitia[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPanitia, setSelectedPanitia] = useState<Panitia | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -100,7 +99,7 @@ export default function PanitiaPage() {
     } else {
       // Create
       const newPanitia: Panitia = {
-        id_panitia: Math.max(...panitiaList.map((p) => p.id_panitia)) + 1,
+        id_panitia: panitiaList.length > 0 ? Math.max(...panitiaList.map((p) => p.id_panitia)) + 1 : 1,
         ...values,
       };
       setPanitiaList([...panitiaList, newPanitia]);
@@ -171,7 +170,7 @@ export default function PanitiaPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {panitiaList.map((panitia) => (
+              {panitiaList.length > 0 ? panitiaList.map((panitia) => (
                 <TableRow key={panitia.id_panitia}>
                   <TableCell className="font-medium">{panitia.username}</TableCell>
                   <TableCell>
@@ -216,7 +215,13 @@ export default function PanitiaPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                 <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                        Belum ada data panitia.
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

@@ -137,7 +137,7 @@ export default function CampusPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {kampusList.map((kampus) => (
+              {kampusList.length > 0 ? kampusList.map((kampus) => (
                 <TableRow key={kampus.id_kampus}>
                   <TableCell className="font-medium">{kampus.nama_kampus}</TableCell>
                   <TableCell>{kampus.wakil_pengasuh || '-'}</TableCell>
@@ -172,7 +172,13 @@ export default function CampusPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                 <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                        Belum ada data kampus.
+                    </TableCell>
+                 </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

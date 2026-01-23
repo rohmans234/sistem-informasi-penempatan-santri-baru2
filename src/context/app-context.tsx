@@ -1,8 +1,6 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { mockKampus, mockSantri, mockPenempatan } from '@/lib/mock-data';
 import type { MasterKampus, CalonSantri, PenempatanResult } from '@/lib/types';
 
 interface AppContextType {
@@ -24,9 +22,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [kampusList, setKampusList] = useState<MasterKampus[]>(mockKampus);
-  const [santriList, setSantriList] = useState<CalonSantri[]>(mockSantri);
-  const [placementResults, setPlacementResults] = useState<PenempatanResult[]>(mockPenempatan);
+  const [kampusList, setKampusList] = useState<MasterKampus[]>([]);
+  const [santriList, setSantriList] = useState<CalonSantri[]>([]);
+  const [placementResults, setPlacementResults] = useState<PenempatanResult[]>([]);
 
   const addKampus = useCallback((newKampusData: Omit<MasterKampus, 'id_kampus' | 'kuota_terisi' | 'tanggal_dibuat'>) => {
     setKampusList(prev => {

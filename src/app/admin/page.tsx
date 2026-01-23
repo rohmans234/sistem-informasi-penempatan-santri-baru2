@@ -43,7 +43,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppContext } from '@/context/app-context';
-import { mockSantri } from '@/lib/mock-data';
 
 
 const recentActivities = [

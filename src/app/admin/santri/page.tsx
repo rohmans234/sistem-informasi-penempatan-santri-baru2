@@ -129,7 +129,7 @@ export default function SantriPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {santriList.map((santri) => (
+              {santriList.length > 0 ? santriList.map((santri) => (
                 <TableRow key={santri.id_santri}>
                   <TableCell className="font-mono">{santri.no_pendaftaran}</TableCell>
                   <TableCell className="font-medium">{santri.nama_lengkap}</TableCell>
@@ -163,7 +163,13 @@ export default function SantriPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                 <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        Belum ada data santri.
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
