@@ -153,14 +153,15 @@ export default function PlacementPage() {
               <CardTitle>2. Finalisasi</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button 
+             <Button 
                 className="w-full" 
-                disabled={isPublished || !santriList.some(s => s.status_penempatan === 'Ditempatkan')}
+                // Tombol aktif JIKA (belum dipublish) DAN (ada santri yang statusnya 'Ditempatkan')
+                disabled={isPublished || !santriList.some(s => s.status_penempatan?.toLowerCase() === 'ditempatkan')}
                 onClick={() => setIsPublishAlertOpen(true)}
               >
                 <Send className="mr-2 h-4 w-4" />
-                {isPublished ? 'Sudah Terbit' : 'Publish ke Publik'}
-              </Button>
+                {isPublished ? 'Hasil Sudah Terbit' : 'Publish ke Publik'}
+            </Button>
               <Button variant="outline" className="w-full text-red-600 hover:bg-red-50 border-red-200" onClick={handleReset} disabled={isProcessing}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Reset Semua Data
