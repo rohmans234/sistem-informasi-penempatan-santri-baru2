@@ -18,6 +18,7 @@ interface AppContextType {
   placementResults: PenempatanResult[];
   setPlacementResults: React.Dispatch<React.SetStateAction<PenempatanResult[]>>;
   updateSinglePlacement: (id: string, updatedResult: Partial<PenempatanResult>) => void;
+  resetPlacement: () => Promise<void>; // Tambahkan ini
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -27,20 +28,48 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [santriList, setSantriList] = useState<CalonSantri[]>([]);
   const [placementResults, setPlacementResults] = useState<PenempatanResult[]>([]);
 
-  // 1. Ambil data awal dari Supabase
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: kampus } = await supabase.from('master_kampus').select('*').order('id_kampus', { ascending: true });
-      const { data: santri } = await supabase.from('calon_santri').select('*').order('id_santri', { ascending: true });
-      
-      if (kampus) setKampusList(kampus);
-      if (santri) setSantriList(santri);
-    };
-    
-    fetchData();
+  const fetchData = useCallback(async () => {
+    const { data: kampus } = await supabase.from('master_kampus').select('*').order('id_kampus', { ascending: true });
+    const { data: santri } = await supabase.from('calon_santri').select('*').order('id_santri', { ascending: true });
+    if (kampus) setKampusList(kampus);
+    if (santri) setSantriList(santri);
   }, []);
 
-  // 2. Fungsi Kampus
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Fungsi Reset Data Penempatan
+  const resetPlacement = useCallback(async () => {
+    try {
+      // 1. Hapus semua data di tabel penempatan
+      const { error: delError } = await supabase.from('penempatan').delete().neq('id_santri', 0);
+      if (delError) throw delError;
+
+      // 2. Reset status semua santri menjadi 'Belum Ditempatkan'
+      const { error: santriError } = await supabase
+        .from('calon_santri')
+        .update({ status_penempatan: 'Belum Ditempatkan' })
+        .neq('id_santri', 0);
+      if (santriError) throw santriError;
+
+      // 3. Reset kuota terisi di semua kampus menjadi 0
+      const { error: kampusError } = await supabase
+        .from('master_kampus')
+        .update({ kuota_terisi: 0 })
+        .neq('id_kampus', 0);
+      if (kampusError) throw kampusError;
+
+      // 4. Sinkronkan ulang data lokal
+      await fetchData();
+    } catch (error: any) {
+      console.error("Gagal reset data:", error.message);
+      throw error;
+    }
+  }, [fetchData]);
+
+  // ... (Fungsi addKampus, updateKampus, dll tetap sama)
+
   const addKampus = useCallback(async (newKampusData: Omit<MasterKampus, 'id_kampus' | 'kuota_terisi' | 'tanggal_dibuat'>) => {
     const { data, error } = await supabase.from('master_kampus').insert([newKampusData]).select();
     if (error) console.error("Gagal tambah kampus:", error.message);
@@ -59,7 +88,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     else setKampusList(prev => prev.filter(k => k.id_kampus !== id));
   }, []);
 
-  // 3. Fungsi Santri
   const addSantri = useCallback(async (newSantriData: Omit<CalonSantri, 'id_santri' | 'rata_rata_ujian' | 'status_penempatan'>) => {
     const rataRata = (newSantriData.nilai_bindonesia + newSantriData.nilai_imla + newSantriData.nilai_alquran + newSantriData.nilai_berhitung) / 4;
     const { data, error } = await supabase.from('calon_santri').insert([{ ...newSantriData, rata_rata_ujian: rataRata, status_penempatan: 'Belum Ditempatkan' }]).select();
@@ -70,7 +98,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const updateSantri = useCallback(async (id: number, updatedData: Partial<Omit<CalonSantri, 'id_santri'>>) => {
     let finalUpdate = { ...updatedData };
     const current = santriList.find(s => s.id_santri === id);
-    
     if (current && (updatedData.nilai_bindonesia !== undefined || updatedData.nilai_imla !== undefined || updatedData.nilai_alquran !== undefined || updatedData.nilai_berhitung !== undefined)) {
       const n1 = updatedData.nilai_bindonesia ?? current.nilai_bindonesia;
       const n2 = updatedData.nilai_imla ?? current.nilai_imla;
@@ -78,7 +105,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const n4 = updatedData.nilai_berhitung ?? current.nilai_berhitung;
       (finalUpdate as any).rata_rata_ujian = (n1 + n2 + n3 + n4) / 4;
     }
-
     const { error } = await supabase.from('calon_santri').update(finalUpdate).eq('id_santri', id);
     if (error) console.error("Gagal update santri:", error.message);
     else setSantriList(prev => prev.map(s => s.id_santri === id ? { ...s, ...finalUpdate } : s));
@@ -89,13 +115,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (error) console.error("Gagal hapus santri:", error.message);
     else setSantriList(prev => prev.filter(s => s.id_santri !== id));
   }, []);
-  
-  // 4. Update Penempatan (Fix Undefined Error)
+
   const updateSinglePlacement = useCallback((id: string, updatedResult: Partial<PenempatanResult>) => {
     setPlacementResults(prev => prev.map(p => {
       if (p.id === id) {
         const updated = { ...p, ...updatedResult };
-        // Tambahkan pengecekan array kampusList agar tidak error saat loading
         if (updatedResult.kampus && kampusList.length > 0) {
           const newKampus = kampusList.find(k => k.nama_kampus === updatedResult.kampus);
           updated.wakil_pengasuh = newKampus?.wakil_pengasuh || 'Belum Ditentukan';
@@ -110,6 +134,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     kampusList, setKampusList, addKampus, updateKampus, deleteKampus,
     santriList, setSantriList, addSantri, updateSantri, deleteSantri,
     placementResults, setPlacementResults, updateSinglePlacement,
+    resetPlacement // Tambahkan ini
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
