@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,8 +27,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PlayCircle, Info, Send, MoreHorizontal, FilePenLine } from 'lucide-react';
-import type { PenempatanResult } from '@/lib/types';
+import { PlayCircle, Info, Send, MoreHorizontal, Loader2 } from 'lucide-react';
+import type { PenempatanResult, CalonSantri, MasterKampus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -50,158 +49,159 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAppContext } from '@/context/app-context';
+import { supabase } from '@/lib/supabase';
 
 export default function PlacementPage() {
-  const { santriList, kampusList, placementResults, setPlacementResults, updateSinglePlacement, setSantriList, setKampusList } = useAppContext();
+  const [santriList, setSantriList] = useState<CalonSantri[]>([]);
+  const [kampusList, setKampusList] = useState<MasterKampus[]>([]);
+  const [placementResults, setPlacementResults] = useState<PenempatanResult[]>([]);
   const [isPublished, setIsPublished] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPublishAlertOpen, setIsPublishAlertOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<PenempatanResult | null>(null);
-  const [editedKampus, setEditedKampus] = useState('');
+  const [editedKampusId, setEditedKampusId] = useState<string>('');
 
   const { toast } = useToast();
 
-  const handleRunPlacement = () => {
+  // Load data awal dari Supabase
+  const fetchData = async () => {
+    const { data: santri } = await supabase.from('calon_santri').select('*');
+    const { data: kampus } = await supabase.from('master_kampus').select('*');
+    if (santri) setSantriList(santri);
+    if (kampus) setKampusList(kampus);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleRunPlacement = async () => {
     setIsProcessing(true);
-    toast({ title: 'Memproses...', description: 'Algoritma penempatan sedang berjalan.' });
+    
+    // 1. Ambil data segar dari DB
+    const { data: availableSantri } = await supabase
+      .from('calon_santri')
+      .select('*')
+      .eq('status_penempatan', 'Belum Ditempatkan')
+      .order('rata_rata_ujian', { ascending: false });
 
-    setTimeout(() => {
-      let tempSantri = JSON.parse(JSON.stringify(santriList));
-      let tempKampus = JSON.parse(JSON.stringify(kampusList));
+    const { data: availableKampus } = await supabase
+      .from('master_kampus')
+      .select('*')
+      .eq('status_aktif', true);
 
-      const availableSantri = tempSantri.filter((s: { status_penempatan: string; }) => s.status_penempatan === 'Belum Ditempatkan');
-      const availableKampus = tempKampus.filter((k: { status_aktif: any; }) => k.status_aktif);
+    if (!availableSantri || availableSantri.length === 0) {
+      toast({ variant: "destructive", title: "Gagal", description: "Tidak ada santri yang perlu ditempatkan." });
+      setIsProcessing(false);
+      return;
+    }
 
-      const newPlacements: PenempatanResult[] = [];
-      let placementId = 1;
+    const newPlacements: any[] = [];
+    const tempKampus = JSON.parse(JSON.stringify(availableKampus));
+    const updateSantriIds: number[] = [];
 
-      availableSantri.sort((a: { rata_rata_ujian: number; }, b: { rata_rata_ujian: number; }) => b.rata_rata_ujian - a.rata_rata_ujian);
+    // 2. Logika Pemerataan (Round Robin) per Gender
+    const genders: ('Laki-laki' | 'Perempuan')[] = ['Laki-laki', 'Perempuan'];
 
-      for (const santri of availableSantri) {
-        let placed = false;
-        // Find a suitable campus
-        const targetKampus = availableKampus.find(
-          (k: { jenis_kelamin: any; kuota_terisi: number; kuota_pelajar_baru: number; }) => k.jenis_kelamin === santri.jenis_kelamin && k.kuota_terisi < k.kuota_pelajar_baru
-        );
+    genders.forEach(gender => {
+      const santriGender = availableSantri.filter(s => s.jenis_kelamin === gender);
+      const kampusGender = tempKampus.filter((k: any) => k.jenis_kelamin === gender);
+      
+      if (kampusGender.length === 0) return;
 
-        if (targetKampus) {
-          newPlacements.push({
-            id: (placementId++).toString(),
-            no_pendaftaran: santri.no_pendaftaran,
-            nama_lengkap: santri.nama_lengkap,
-            jenis_kelamin: santri.jenis_kelamin,
-            kampus: targetKampus.nama_kampus,
-            wakil_pengasuh: targetKampus.wakil_pengasuh || 'Belum Ditentukan',
-          });
-          targetKampus.kuota_terisi++;
-          santri.status_penempatan = 'Ditempatkan';
-          placed = true;
+      let kampusIdx = 0;
+      santriGender.forEach(santri => {
+        // Cari kampus berikutnya yang masih punya kuota (Looping)
+        let found = false;
+        let attempts = 0;
+        
+        while (!found && attempts < kampusGender.length) {
+          const currentKampus = kampusGender[kampusIdx];
+          if (currentKampus.kuota_terisi < currentKampus.kuota_pelajar_baru) {
+            newPlacements.push({
+              id_santri: santri.id_santri,
+              id_kampus_tujuan: currentKampus.id_kampus,
+              status_publish: false
+            });
+            currentKampus.kuota_terisi++;
+            updateSantriIds.push(santri.id_santri);
+            found = true;
+          }
+          kampusIdx = (kampusIdx + 1) % kampusGender.length; // Bergeser ke kampus lain untuk pemerataan
+          attempts++;
         }
+      });
+    });
+
+    // 3. Simpan ke Database
+    try {
+      const { error: insertErr } = await supabase.from('penempatan').insert(newPlacements);
+      if (insertErr) throw insertErr;
+
+      await supabase.from('calon_santri').update({ status_penempatan: 'Ditempatkan' }).in('id_santri', updateSantriIds);
+      
+      for (const k of tempKampus) {
+        await supabase.from('master_kampus').update({ kuota_terisi: k.kuota_terisi }).eq('id_kampus', k.id_kampus);
       }
 
-      setPlacementResults(newPlacements);
-      setSantriList(tempSantri);
-      setKampusList(tempKampus);
+      toast({ title: "Berhasil!", description: `${newPlacements.length} santri telah ditempatkan secara merata.` });
+      fetchData(); // Refresh UI
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
       setIsProcessing(false);
-      toast({ title: 'Berhasil!', description: 'Proses penempatan otomatis telah selesai.' });
-    }, 2000);
-  };
-  
-  const handleOpenEditModal = (result: PenempatanResult) => {
-    setSelectedResult(result);
-    setEditedKampus(result.kampus);
-    setIsEditModalOpen(true);
+    }
   };
 
-  const handleCloseEditModal = () => {
-    setSelectedResult(null);
-    setIsEditModalOpen(false);
-  }
-
-  const handleUpdatePlacement = () => {
-    if (!selectedResult) return;
-
-    updateSinglePlacement(selectedResult.id, {
-        ...selectedResult,
-        kampus: editedKampus,
-    });
-    
-    toast({ title: 'Berhasil!', description: 'Data penempatan telah diperbarui.' });
-    handleCloseEditModal();
-  }
-
-  const handlePublish = () => {
-    setIsPublished(true);
-    setIsPublishAlertOpen(false);
-    toast({ title: 'Hasil Dipublikasikan!', description: 'Santri sekarang dapat melihat hasil penempatan mereka.' });
+  const handlePublish = async () => {
+    const { error } = await supabase.from('penempatan').update({ status_publish: true }).eq('status_publish', false);
+    if (!error) {
+      setIsPublished(true);
+      setIsPublishAlertOpen(false);
+      toast({ title: 'Dipublikasikan!', description: 'Hasil kini dapat diakses oleh publik.' });
+    }
   };
-  
-  const handleLengkapiData = () => {
-      toast({
-            title: "Fitur Dalam Pengembangan",
-            description: "Fungsionalitas untuk melengkapi data wali secara massal akan segera tersedia.",
-      });
-  }
-
-  const activeMaleKampus = kampusList.filter(k => k.status_aktif && k.jenis_kelamin === 'Laki-laki').map(k => k.nama_kampus);
-  const activeFemaleKampus = kampusList.filter(k => k.status_aktif && k.jenis_kelamin === 'Perempuan').map(k => k.nama_kampus);
-  const relevantKampusList = selectedResult?.jenis_kelamin === 'Laki-laki' ? activeMaleKampus : activeFemaleKampus;
-
 
   return (
     <>
-      <PageHeader
-        title="Proses Penempatan"
-        description="Jalankan algoritma, review, dan publikasikan hasil penempatan."
-      />
+      <PageHeader title="Proses Penempatan" description="Algoritma pemerataan kualitas santri ke seluruh kampus Gontor." />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>1. Jalankan Algoritma</CardTitle>
-              <CardDescription>Mulai proses penempatan otomatis berdasarkan data santri dan kuota kampus.</CardDescription>
+              <CardTitle>1. Jalankan SPK Pemerataan</CardTitle>
+              <CardDescription>Mendistribusikan santri berdasarkan peringkat nilai agar kualitas setiap kampus seimbang.</CardDescription>
             </CardHeader>
             <CardContent>
               <Alert>
                 <Info className="h-4 w-4" />
-                <AlertTitle>Perhatian!</AlertTitle>
-                <AlertDescription>
-                  Pastikan semua data santri dan kampus sudah valid sebelum menjalankan proses ini.
-                </AlertDescription>
+                <AlertTitle>Info Sistem</AlertTitle>
+                <AlertDescription>Santri dengan nilai tertinggi akan disebar bergantian ke tiap kampus tujuan.</AlertDescription>
               </Alert>
             </CardContent>
             <CardFooter>
               <Button className="w-full" size="lg" onClick={handleRunPlacement} disabled={isProcessing}>
-                {isProcessing ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
-                ) : (
-                  <PlayCircle className="mr-2 h-5 w-5" />
-                )}
-                {isProcessing ? 'Memproses...' : 'Jalankan Penempatan Otomatis'}
+                {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <PlayCircle className="mr-2 h-5 w-5" />}
+                {isProcessing ? 'Memproses Pemerataan...' : 'Jalankan Penempatan'}
               </Button>
             </CardFooter>
           </Card>
 
-           <Card>
+          <Card>
             <CardHeader>
-              <CardTitle>2. Finalisasi & Publikasi</CardTitle>
-              <CardDescription>Publikasikan hasil agar dapat dilihat oleh santri.</CardDescription>
+              <CardTitle>2. Finalisasi</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className='space-y-4'>
-                 <Button 
-                    className="w-full" 
-                    variant={isPublished ? "secondary" : "default"} 
-                    disabled={isPublished || placementResults.length === 0}
-                    onClick={() => setIsPublishAlertOpen(true)}
-                  >
-                  <Send className="mr-2 h-4 w-4" />
-                  {isPublished ? 'Hasil Sudah Dipublish' : 'Publish Hasil'}
-                </Button>
-              </div>
+              <Button 
+                className="w-full" 
+                disabled={isPublished || santriList.filter(s => s.status_penempatan === 'Ditempatkan').length === 0}
+                onClick={() => setIsPublishAlertOpen(true)}
+              >
+                <Send className="mr-2 h-4 w-4" />
+                {isPublished ? 'Hasil Sudah Terbit' : 'Publish ke Publik'}
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -209,55 +209,33 @@ export default function PlacementPage() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Hasil Penempatan Sementara</CardTitle>
-              <CardDescription>
-                Review hasil dari algoritma. Koreksi manual dapat dilakukan jika perlu.
-              </CardDescription>
+              <CardTitle>Status Penempatan Santri</CardTitle>
+              <CardDescription>Daftar santri yang sudah diproses oleh sistem.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No. Pendaftaran</TableHead>
-                    <TableHead>Nama Lengkap</TableHead>
-                    <TableHead>Kampus Tujuan</TableHead>
-                    <TableHead>Wakil Pengasuh</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Aksi</span>
-                    </TableHead>
+                    <TableHead>Pendaftaran</TableHead>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Gender</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {placementResults.length > 0 ? placementResults.map((result) => (
-                    <TableRow key={result.id}>
-                      <TableCell className="font-mono">{result.no_pendaftaran}</TableCell>
-                      <TableCell className="font-medium">{result.nama_lengkap}</TableCell>
+                  {santriList.length > 0 ? santriList.map((s) => (
+                    <TableRow key={s.id_santri}>
+                      <TableCell className="font-mono">{s.no_pendaftaran}</TableCell>
+                      <TableCell>{s.nama_lengkap}</TableCell>
+                      <TableCell>{s.jenis_kelamin}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{result.kampus}</Badge>
-                      </TableCell>
-                       <TableCell>
-                        {result.wakil_pengasuh}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" disabled={isPublished}>
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEditModal(result)}>Pindahkan Kampus</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Badge variant={s.status_penempatan === 'Ditempatkan' ? "default" : "outline"}>
+                          {s.status_penempatan}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   )) : (
-                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
-                            Belum ada hasil. Jalankan proses penempatan terlebih dahulu.
-                        </TableCell>
-                     </TableRow>
+                    <TableRow><TableCell colSpan={4} className="text-center">Belum ada data santri.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -265,54 +243,19 @@ export default function PlacementPage() {
           </Card>
         </div>
       </div>
-      
+
       <AlertDialog open={isPublishAlertOpen} onOpenChange={setIsPublishAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Publikasikan Hasil Penempatan?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tindakan ini akan membuat hasil penempatan dapat diakses oleh calon santri. Pastikan semua data sudah final. Anda tidak dapat mengubah data setelah dipublikasikan.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Publikasikan Sekarang?</AlertDialogTitle>
+            <AlertDialogDescription>Data akan dikunci dan santri bisa mengecek hasil lewat nomor pendaftaran.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handlePublish}>Ya, Publikasikan</AlertDialogAction>
+            <AlertDialogAction onClick={handlePublish}>Ya, Publish</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={isEditModalOpen} onOpenChange={handleCloseEditModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Pindahkan Santri</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-                <p className="font-medium">{selectedResult?.nama_lengkap}</p>
-                <p className="text-sm text-muted-foreground">{selectedResult?.no_pendaftaran}</p>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="edit-kampus">Pindahkan ke Kampus</Label>
-                <Select value={editedKampus} onValueChange={setEditedKampus}>
-                    <SelectTrigger id="edit-kampus">
-                        <SelectValue placeholder="Pilih kampus baru" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {relevantKampusList.map(kampus => (
-                            <SelectItem key={kampus} value={kampus}>{kampus}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-          </div>
-           <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseEditModal}>
-                Batal
-              </Button>
-              <Button type="button" onClick={handleUpdatePlacement}>Simpan Perubahan</Button>
-            </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
