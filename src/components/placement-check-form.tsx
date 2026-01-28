@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,45 +26,40 @@ export function PlacementCheckForm() {
     setResult(null);
 
     try {
-      // Query ke Supabase dengan JOIN ke tabel penempatan dan master_kampus
+      // This query is specific: find a PUBLISHED placement record
+      // that is linked to the registration number provided.
       const { data, error } = await supabase
-        .from('calon_santri')
+        .from('penempatan')
         .select(`
-          nama_lengkap,
-          no_pendaftaran,
-          status_penempatan,
-          penempatan (
-            status_publish,
-            master_kampus (
-              nama_kampus,
-              wakil_pengasuh,
-              lokasi
-            )
-          )
+          status_publish,
+          calon_santri!inner(*),
+          master_kampus(*)
         `)
-        .eq('no_pendaftaran', regNumber.trim())
+        .eq('status_publish', true)
+        .eq('calon_santri.no_pendaftaran', regNumber.trim())
         .single();
 
+      // If .single() finds no rows or more than one, it returns an error.
       if (error || !data) {
         setResult('not_found');
-      } else {
-        // Cek apakah sudah dipublish oleh admin
-        const placement = data.penempatan?.[0];
-        
-        if (!placement || !placement.status_publish) {
-          // Jika data ada tapi belum dipublish, tampilkan sebagai belum ditemukan/belum diumumkan
-          setResult('not_found'); 
-        } else if (data.status_penempatan !== 'Ditempatkan') {
-          setResult('not_placed');
-        } else {
-          setResult(data);
-        }
+        return;
       }
+      
+      const santriData = Array.isArray(data.calon_santri) ? data.calon_santri[0] : data.calon_santri;
+
+      if (!santriData) {
+          setResult('not_found');
+      } else {
+          setResult(data);
+      }
+
     } catch (err) {
+      console.error("Search Error:", err);
+      setResult('not_found');
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Terjadi kesalahan saat mengambil data."
+        description: "Terjadi kesalahan atau data tidak ditemukan."
       });
     } finally {
       setLoading(false);
@@ -89,7 +84,7 @@ export function PlacementCheckForm() {
       );
     }
 
-    if (!result) return null;
+    if (!searched || !result) return null;
 
     if (result === 'not_found') {
       return (
@@ -109,8 +104,12 @@ export function PlacementCheckForm() {
       );
     }
     
-    const isPlaced = typeof result === 'object' && result.status_penempatan === 'Ditempatkan';
-    const placementData = result.penempatan?.[0]?.master_kampus;
+    const santriData = Array.isArray(result.calon_santri) ? result.calon_santri[0] : result.calon_santri;
+    const placementData = result.master_kampus;
+    
+    if (!santriData) return null;
+
+    const isPlaced = santriData.status_penempatan === 'Ditempatkan';
 
     return (
       <motion.div key="found" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-10 max-w-4xl mx-auto">
@@ -130,21 +129,21 @@ export function PlacementCheckForm() {
             <div className="md:col-span-2 space-y-6">
               <div>
                 <p className="text-sm text-gray-500">Nomor Pendaftaran</p>
-                <p className="text-2xl font-bold font-mono text-gray-800">{result.no_pendaftaran}</p>
+                <p className="text-2xl font-bold font-mono text-gray-800">{santriData.no_pendaftaran}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Nama Lengkap</p>
-                <p className="text-3xl font-bold text-gray-900 uppercase">{result.nama_lengkap}</p>
+                <p className="text-3xl font-bold text-gray-900 uppercase">{santriData.nama_lengkap}</p>
               </div>
             </div>
             
-            {isPlaced ? (
+            {isPlaced && placementData ? (
               <div className="bg-gray-50 rounded-xl p-6 flex flex-col items-center justify-center text-center border">
                 <p className="text-sm font-semibold text-gray-500 tracking-wider uppercase">DITEMPATKAN DI KAMPUS</p>
                 <div className="my-4 bg-yellow-400 text-gray-900 rounded-2xl p-6 w-full shadow-lg border-2 border-gray-900">
                   <MapPin className="w-8 h-8 mx-auto mb-2"/>
-                  <p className="text-xl font-bold uppercase">{placementData?.nama_kampus}</p>
-                  <p className="text-sm">{placementData?.lokasi || 'Jawa Timur'}</p>
+                  <p className="text-xl font-bold uppercase">{placementData.nama_kampus}</p>
+                  <p className="text-sm">{placementData.lokasi || 'Jawa Timur'}</p>
                 </div>
                 <Button variant="outline" className="w-full bg-white shadow-sm">
                   <Download className="mr-2 h-4 w-4"/>
@@ -202,7 +201,7 @@ export function PlacementCheckForm() {
       </div>
       
       <AnimatePresence mode="wait">
-        {searched && getResultCard()}
+        {getResultCard()}
       </AnimatePresence>
     </>
   );
